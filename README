@@ -1,0 +1,24 @@
+StandardSimDynamics.m computes the derivative of the UAS state vector. Typically, it is used as shown below: 
+
+load param_stele_new2
+load LevelTrim % Loads the trim values pertaining to straight and level flight
+magCase = 1; % 1/2/3
+constWind = [2.5; 2.5; 0]; %NORTH/EAST/DOWN
+wind = [randn(3,1); magCase; constWind]; wind(:,2) = wind;
+ 
+% Initial state and control input vectors  
+xOut = [xTrim2; uTrim(4); 0.0; zeros(3,1)]; %xOut = [xTrim2; uTrim(4); 0.0; zeros(5,1)];
+uOut = uTrim; 
+dtvec = [0 0.04]; % 0.04s is the timestep 
+j = 1;
+while j < 1000
+        j = j + 1;
+        wind(1:3,j) = randn(3,1);
+		odefun = @(t,x) StandardSimDynamics(t,x,real(uOut(:,j-1)),wind(:,j),param,0);
+        [~,xs] = ode23(odefun,dtvec,xOut(:,j-1));
+		xOut(:,j) = xs(end,:)';
+        wind(:,j+1) = wind(:,j);
+		% Update the control input vector, for e.g., using a controller, or just simulate straight and level equilibrium flight by setting 
+		uOut(:,j) = uTrim;
+end 		
+
