@@ -25,56 +25,58 @@ cs_std_dev = 0;
 cs = 0;
 csa = 0;
 
-for i=1:1:18
-    tau = abs(mean(dxarray(i,:)));
-    cs_mean = mean(dxarray(i,:));
-    cs_std_dev = std(dxarray(i,:));
-%     %testing for xpos (state 10)
-%     if i == 10
-%         %tau = 1.515; %25hz tau
-%         %tau = 1.85; %50hz tau
-%         tau = 1.83; %13hz
-%         %climit affects upper and lower control limit
-%         %25hz 24.5 climit; mshift 0.75
-%         %50hz 23.7 climit; mshift 0.75
-%         climit = 23.3; %mean of xOut, the eer is at climit = 11.6, mshift = 1
-%         mshift = 0.75;
-%         yshift = 0.001;
-%         alpha = 0.05;
-%         cs =cusum(dxdotarray(10,:),climit,mshift,cs_mean,cs_std_dev,'all');
-%         csa = cusum(attack_state_array(10,:),climit,mshift,cs_mean,cs_std_dev,'all');
-%         disp(numel(cs));
-%         disp(numel(csa));
-%         disp(numel(cs)/sr);
-%         disp((500-numel(csa))/sr);
-%         [regchi,regp] = signrank(residual_array(10,:),yshift);
-%         [atkchi, atkp] = signrank(attackres_array(10,:),yshift);
-%         %regchi = CHI2TEST(residual_array(10,:),alpha);
-%         %atkchi = CHI2TEST(attackres_array(10,:),alpha);
-%         disp("chi test");
-%         disp(regchi);
-%         disp(atkchi);
-%     end
-    %testing for height (state 12)
-    if i == 12
-        yshift = 0.001;
-        alpha = 0.05;
-        cs =cusum(dxdotarray(12,:),climit,mshift,cs_mean,cs_std_dev,'all');
-        csa = cusum(attack_state_array(12,:),climit,mshift,cs_mean,cs_std_dev,'all');
-        disp(numel(cs));
-        disp(numel(csa));
-        disp("cusum");
-        disp(numel(cs)/sr*100);
-        disp("atk cusum");
-        disp((500-numel(csa))/sr*100);
-        [regchi,regp] = signrank(residual_array(12,:),yshift);
-        [atkchi, atkp] = signrank(attackres_array(12,:),yshift);
-        %regchi = CHI2TEST(residual_array(10,:),alpha);
-        %atkchi = CHI2TEST(attackres_array(10,:),alpha);
-       % disp("chi test");
-      %  disp(regchi);
-      %  disp(atkchi);
-    end
+    total_tau = zeros(1,18);
+    attack_total_tau = zeros(1,18);
+    for i=1:1:18
+        tau = abs(mean(dxarray(i,:)));
+        cs_mean = mean(dxarray(i,:));
+        cs_std_dev = std(dxarray(i,:));
+        %     %testing for xpos (state 10)
+        %     if i == 10
+        %         %tau = 1.515; %25hz tau
+        %         %tau = 1.85; %50hz tau
+        %         tau = 1.83; %13hz
+        %         %climit affects upper and lower control limit
+        %         %25hz 24.5 climit; mshift 0.75
+        %         %50hz 23.7 climit; mshift 0.75
+        %         climit = 23.3; %mean of xOut, the eer is at climit = 11.6, mshift = 1
+        %         mshift = 0.75;
+        %         yshift = 0.001;
+        %         alpha = 0.05;
+        %         cs =cusum(dxdotarray(10,:),climit,mshift,cs_mean,cs_std_dev,'all');
+        %         csa = cusum(attack_state_array(10,:),climit,mshift,cs_mean,cs_std_dev,'all');
+        %         disp(numel(cs));
+        %         disp(numel(csa));
+        %         disp(numel(cs)/sr);
+        %         disp((500-numel(csa))/sr);
+        %         [regchi,regp] = signrank(residual_array(10,:),yshift);
+        %         [atkchi, atkp] = signrank(attackres_array(10,:),yshift);
+        %         %regchi = CHI2TEST(residual_array(10,:),alpha);
+        %         %atkchi = CHI2TEST(attackres_array(10,:),alpha);
+        %         disp("chi test");
+        %         disp(regchi);
+        %         disp(atkchi);
+        %     end
+        %testing for height (state 12)
+        if i == 12
+            yshift = 0.001;
+            alpha = 0.05;
+           % cs =cusum(dxdotarray(12,:),climit,mshift,cs_mean,cs_std_dev,'all');
+            %csa = cusum(attack_state_array(12,:),climit,mshift,cs_mean,cs_std_dev,'all');
+            %disp(numel(cs));
+            %disp(numel(csa));
+         %   disp("cusum");
+          %  disp(numel(cs)/sr*100);
+          %  disp("atk cusum");
+          %  disp((500-numel(csa))/sr*100);
+          %  [regchi,regp] = signrank(residual_array(12,:),yshift);
+          %  [atkchi, atkp] = signrank(attackres_array(12,:),yshift);
+            %regchi = CHI2TEST(residual_array(10,:),alpha);
+            %atkchi = CHI2TEST(attackres_array(10,:),alpha);
+            % disp("chi test");
+            %  disp(regchi);
+            %  disp(atkchi);
+        end
 
     %Highlight the point where the cumulative sum drifts more than five standard deviations beyond the target mean. 
     %Set the minimum detectable mean shift to one standard deviation.
@@ -90,19 +92,20 @@ for i=1:1:18
     %chi test across attack residuals
   %  disp("under attack");
    % disp(chi2gof(attackres_array(i,:)));
-    for ind=1:1:500
-        if residual_array(i,ind) >= tau
-           % disp("Residual Alert!") 
-            %disp(residual)
-            total_tau(i)=total_tau(i)+1;
-        end
-        if attackres_array(i,ind) >= tau
-            %disp("Attack Alert!") 
-            %disp(residual)
-            attack_total_tau(i)=attack_total_tau(i)+1;
-        end
+   for ind=1:1:500
+       if residual_array(i,ind) >= tau
+           % disp("Residual Alert!")
+           %disp(residual)
+           total_tau(i)=total_tau(i)+1;
+       end
+       if attackres_array(i,ind) >= tau
+           %disp("Attack Alert!")
+           %disp(residual)
+           attack_total_tau(i)=attack_total_tau(i)+1;
+       end
+   end
     end
-end
+
 
 
 disp("mean modeling error");
@@ -126,15 +129,15 @@ disp((sr-attack_total_tau(12))/sr*100);
 %5end
 
 %Height Graph
-%figure(97)
-%plot(yRef,xRef,'r','LineWidth',2);grid on; xlabel('EAST/WEST (m)');ylabel('NORTH/SOUTH (m)'); hold on;
-%plot(yplot,xplot,'b','LineWidth',2); hold on; grid on; hold on; 
-%plot(dxdotarray(11,1:sr),dxdotarray(10,1:sr),'r','LineWidth',2); hold on; grid on; hold on;
+% figure(97)
+% plot(yRef,xRef,'r','LineWidth',2);grid on; xlabel('EAST/WEST (m)');ylabel('NORTH/SOUTH (m)'); hold on;
+% plot(yplot,xplot,'b','LineWidth',2); hold on; grid on; hold on; 
+% plot(dxdotarray(11,1:sr),dxdotarray(10,1:sr),'r','LineWidth',2); hold on; grid on; hold on;
 
-% figure(96)
-% plot(yRef,xRef,'r','LineWidth',2);grid on; xlabel('Timesteps');ylabel('Height (m)'); hold on;
-% plot(attack_state_array(12,1:sr),'r','LineWidth',2); hold on; grid on; hold on; 
-% plot(dxdotarray(12,1:sr),'b','LineWidth',2); hold on; grid on; hold on;
+ figure(96)
+ plot(yRef,xRef,'r','LineWidth',2);grid on; xlabel('Timesteps');ylabel('Height (m)'); hold on;
+ plot(attack_state_array(12,1:sr),'r','LineWidth',2); hold on; grid on; hold on; 
+ plot(dxdotarray(12,1:sr),'b','LineWidth',2); hold on; grid on; hold on;
 % %%%%%%%%%%%%%%%%%%%%%
 %Constant offset attack
 %%%%%%%%%%%%%%%%%%%%%%
