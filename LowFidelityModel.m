@@ -15,6 +15,7 @@ du = uOut(1);
 
 yarray = zeros(10,1);
 dxdotarray = zeros(18,1);
+dxdotarraykf = zeros(18,1);
 dxarray = zeros(18,1);
 residual_array = zeros(18,500);
 attackres_array = zeros(18,500);
@@ -58,13 +59,64 @@ dxdot = dxdot(1:18);
 P = 0.1*eye(18);
 
 %Q = Process noise co-variance
-Q = 0.01;
-
+Q = [ .001 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 .001 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 .01 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 .01 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 .002 0 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 .01 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 .01 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 .1 0 0 0 .01 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 .1 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 .1 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 .1 .1 0 0 .01 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 .1 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 .02 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 0 .01 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 0 0 .01 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .02 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .01 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .01 ];
+  
 %R = measurement noise covariance; small = accurate; large = inaccurate
-R = 1;
+R = [ 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 ;
+      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 ];
 
 %I = unit matrix
 I = ones(18);
+
+%%%%Just estimates no filter%%%%%
+for i = inc:inc:runs     
+    k = k+4;
+    du = uOut(:,k);
+
+    dxdot = A*(dxdot) + B2*du;
+    dxdotarray = [dxdotarray, dxdot];
+end
+
+
+%%%Adding Kalman Filter%%%
+k = 0;
+
+%Initial State Estimate
+dxdot = xOut(:,1);
+dxdot = dxdot(1:18);
 
 for i = inc:inc:runs     
     k = k+4;
@@ -83,7 +135,7 @@ for i = inc:inc:runs
 
     %State Estimate 
     dxdot = A*dxdot + B2*du;
-    
+
     %Covariance Estimate 
     P = A*P*A' + Q;
     
@@ -99,32 +151,46 @@ for i = inc:inc:runs
     karray = [karray,K];
     
     dxdot = dxdot + K*(dy-dydot);
-    
+    dxdotarraykf = [dxdotarraykf, dxdot];
     %Update the error covariance
     % I = unit matrix
     P = (I - (K*H))*P;
 %%%%%END Kalman Filter%%%%%
  
-  dxdot(12) = dxdot(12)+50;
-  dxdotarray = [dxdotarray,dxdot];
-  
-  %Attack Height State
-  % residual = abs(xplot(k+1)-dxdot(10));
-  dx =xOut(:,k+1);
-  dx = dx(1:18);
-  dxarray = [dxarray,dx];
-  attackdx = dx*2;
-  attackdx(12) = attackdx(12) + 50;
-  dx(12) = dx(12)+50;
-  attack_state_array = [attack_state_array,attackdx];
-  residual = abs(dx-dxdot);
-  attackres = abs(attackdx-dxdot);
-  residual_array(:,ind) = residual;
-  attackres_array(:,ind) = attackres;
+%   dxdot(12) = dxdot(12)+50;
+%   dxdotarray = [dxdotarray,dxdot];
+%   
+%   %Attack Height State
+%   % residual = abs(xplot(k+1)-dxdot(10));
+%   dx =xOut(:,k+1);
+%   dx = dx(1:18);
+%   dxarray = [dxarray,dx];
+%   attackdx = dx*2;
+%   attackdx(12) = attackdx(12) + 50;
+%   dx(12) = dx(12)+50;
+%   attack_state_array = [attack_state_array,attackdx];
+%   residual = abs(dx-dxdot);
+%   attackres = abs(attackdx-dxdot);
+%   residual_array(:,ind) = residual;
+%   attackres_array(:,ind) = attackres;
 
   disp(k)
 end
 
-%plot(yRef,xRef,'r','LineWidth',2);grid on; xlabel('EAST/WEST (m)');ylabel('NORTH/SOUTH (m)'); hold on;
-plot(karray(12,1:sr));
-%plot(karray);
+figure(100)
+plot(yRef,xRef,'r','LineWidth',2);grid on; xlabel('EAST/WEST (m)');ylabel('NORTH/SOUTH (m)'); hold on;
+plot(yplot,xplot,col,'LineWidth',2); hold on; grid on; hold on;
+
+figure(99)
+plot(yRef,xRef,'r','LineWidth',2);grid on; xlabel('EAST/WEST (m)');ylabel('NORTH/SOUTH (m)'); hold on;
+plot(dxdotarray(11,1:sr),dxdotarray(10,1:sr),col,'LineWidth',2); hold on; grid on; hold on; 
+
+
+figure(98)
+plot(yRef,xRef,'r','LineWidth',2);grid on; xlabel('EAST/WEST (m)');ylabel('NORTH/SOUTH (m)'); hold on;
+plot(dxdotarraykf(11,1:sr),dxdotarraykf(10,1:sr),col,'LineWidth',2); hold on; grid on; hold on; 
+
+
+
+% plot(karray(12,1:sr));
+% plot(karray);
